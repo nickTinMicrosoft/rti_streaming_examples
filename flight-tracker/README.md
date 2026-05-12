@@ -4,7 +4,29 @@ Streams live ADS-B aircraft data from a local PiAware/dump1090 device to Azure E
 
 ## Prerequisites
 
-- A PiAware or dump1090 receiver on your local network
+### PiAware ADS-B Receiver (required hardware)
+
+This simulator reads live aircraft data from a **PiAware / dump1090** receiver on your local network. You'll need to purchase and assemble one before using this app.
+
+| Resource | Link |
+|----------|------|
+| **Build guide & parts list** | [flightaware.com/adsb/piaware/build](https://flightaware.com/adsb/piaware/build) |
+| **Buy hardware (SDR, antenna, kits)** | [FlightAware ADS-B Store](https://flightaware.store/) |
+| **PiAware software install** | [flightaware.com/adsb/piaware/install](https://flightaware.com/adsb/piaware/install) |
+
+**What you need:**
+- Raspberry Pi (3B+ or newer recommended)
+- FlightAware Pro Stick Plus (USB SDR receiver, 1090 MHz)
+- 1090 MHz ADS-B antenna
+- MicroSD card (16 GB+) flashed with PiAware OS
+- Power supply and case
+
+Follow the [official build guide](https://flightaware.com/adsb/piaware/build) to assemble and register your device. Once running, your PiAware serves a local JSON feed at `http://<pi-ip>:8080/data/aircraft.json` — that's what this script reads from.
+
+> **Bonus:** Feeding data to FlightAware gives you a free [FlightAware Enterprise account](https://flightaware.com/commercial/premium/).
+
+### Azure Event Hub
+
 - An Azure Event Hub (see [docs/setup-event-hub.md](../docs/setup-event-hub.md))
 
 ## Setup
