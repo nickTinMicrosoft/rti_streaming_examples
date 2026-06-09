@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RTI Streaming Examples — Microsoft Fabric Real-Time Intelligence</title>
+    <style>
+        :root {
+            --primary: #0078d4;
+            --primary-dark: #005a9e;
+            --accent: #00b7c3;
+            --bg: #f9fafb;
+            --card-bg: #ffffff;
+            --text: #1a1a2e;
+            --text-muted: #555770;
+            --border: #e1e4e8;
+            --code-bg: #1e1e2e;
+            --code-text: #cdd6f4;
+            --gradient-start: #0078d4;
+            --gradient-end: #00b7c3;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* Hero */
+        .hero {
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+            color: white;
+            padding: 5rem 2rem 4rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        .hero-content { position: relative; max-width: 800px; margin: 0 auto; }
+        .hero h1 { font-size: 2.8rem; font-weight: 700; margin-bottom: 1rem; }
+        .hero p { font-size: 1.25rem; opacity: 0.9; max-width: 600px; margin: 0 auto 2rem; }
+
+        .badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 20px;
+            padding: 0.4rem 1rem;
+            font-size: 0.85rem;
+            margin: 0 0.3rem 0.5rem;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Nav */
+        nav {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+
+        nav a:hover { color: var(--primary); }
+
+        /* Sections */
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+
+        section {
+            padding: 4rem 0;
+        }
+
+        section + section { border-top: 1px solid var(--border); }
+
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--text);
+        }
+
+        h3 {
+            font-size: 1.3rem;
+            margin-bottom: 0.75rem;
+            color: var(--text);
+        }
+
+        .section-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            margin-bottom: 2.5rem;
+        }
+
+        /* Cards */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        }
+
+        .card-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .card h3 { margin-bottom: 0.5rem; }
+        .card p { color: var(--text-muted); font-size: 0.95rem; }
+
+        .card-tag {
+            display: inline-block;
+            background: #e8f4fd;
+            color: var(--primary);
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            margin-top: 1rem;
+        }
+
+        /* Architecture */
+        .architecture-diagram {
+            background: var(--code-bg);
+            color: var(--code-text);
+            border-radius: 12px;
+            padding: 2rem;
+            font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            line-height: 1.5;
+            margin: 1.5rem 0;
+        }
+
+        /* Steps */
+        .steps {
+            counter-reset: step;
+            list-style: none;
+            margin-top: 1.5rem;
+        }
+
+        .steps li {
+            counter-increment: step;
+            padding: 1.5rem 1.5rem 1.5rem 4.5rem;
+            position: relative;
+            border-left: 2px solid var(--border);
+            margin-left: 1.5rem;
+        }
+
+        .steps li:last-child { border-left-color: transparent; }
+
+        .steps li::before {
+            content: counter(step);
+            position: absolute;
+            left: -1rem;
+            top: 1.5rem;
+            width: 2rem;
+            height: 2rem;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .steps li h3 { margin-bottom: 0.5rem; }
+        .steps li p { color: var(--text-muted); }
+
+        /* Code blocks */
+        code {
+            background: #f0f2f5;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.9em;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+        }
+
+        pre {
+            background: var(--code-bg);
+            color: var(--code-text);
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        /* Tables */
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: #f6f8fa;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+
+        /* Links */
+        a { color: var(--primary); }
+        a:hover { color: var(--primary-dark); }
+
+        /* Footer */
+        footer {
+            background: var(--code-bg);
+            color: #a6adc8;
+            padding: 3rem 2rem;
+            text-align: center;
+            margin-top: 4rem;
+        }
+
+        footer a { color: var(--accent); }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2rem; }
+            .hero p { font-size: 1rem; }
+            nav ul { gap: 1rem; }
+            .card-grid { grid-template-columns: 1fr; }
+            .steps li { padding-left: 3.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Hero -->
+<header class="hero">
+    <div class="hero-content">
+        <h1>🚀 RTI Streaming Examples</h1>
+        <p>Python simulators that stream real-time data to Azure for ingestion into Microsoft Fabric Real-Time Intelligence</p>
+        <div>
+            <span class="badge">Python</span>
+            <span class="badge">Azure Event Hub</span>
+            <span class="badge">Azure IoT Hub</span>
+            <span class="badge">Microsoft Fabric</span>
+            <span class="badge">KQL</span>
+        </div>
+    </div>
+</header>
+
+<!-- Navigation -->
+<nav>
+    <ul>
+        <li><a href="#simulators">Simulators</a></li>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#quickstart">Quick Start</a></li>
+        <li><a href="#hospital">Hospital</a></li>
+        <li><a href="#trains">Trains</a></li>
+        <li><a href="#flights">Flights</a></li>
+        <li><a href="#setup">Azure Setup</a></li>
+    </ul>
+</nav>
+
+<main class="container">
+
+    <!-- Simulators Overview -->
+    <section id="simulators">
+        <h2>Simulators</h2>
+        <p class="section-subtitle">Three ready-to-run streaming apps — no real hardware or data sources required (except the flight tracker).</p>
+
+        <div class="card-grid">
+            <div class="card">
+                <div class="card-icon">🏥</div>
+                <h3>Hospital Vitals & Movement</h3>
+                <p>Patient vital signs (HR, BP, SpO2, temp) and movement events (admissions, transfers, discharges) for 15 simulated patients with conditions that shift over time.</p>
+                <span class="card-tag">Event Hub</span>
+            </div>
+            <div class="card">
+                <div class="card-icon">🚇</div>
+                <h3>NYC Metro Train Telemetry</h3>
+                <p>Three train lines (Red, Blue, Green) running realistic NYC routes with GPS, speed, and delay data. Available in both Event Hub and IoT Hub flavors.</p>
+                <span class="card-tag">Event Hub</span>
+                <span class="card-tag">IoT Hub</span>
+            </div>
+            <div class="card">
+                <div class="card-icon">✈️</div>
+                <h3>PiAware Flight Tracker</h3>
+                <p>Live ADS-B aircraft data from a local PiAware/dump1090 receiver. Real flight data — requires a Raspberry Pi with SDR hardware.</p>
+                <span class="card-tag">Event Hub</span>
+                <span class="card-tag">Live Data</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture -->
+    <section id="architecture">
+        <h2>Architecture</h2>
+        <p class="section-subtitle">All simulators follow the same pattern: generate data → stream to Azure → ingest into Fabric.</p>
+
+        <div class="architecture-diagram">
+<pre style="background:none;margin:0;padding:0;color:inherit;">┌───────────────────────┐     ┌──────────────────┐     ┌────────────────────┐
+│  Python Simulators    │     │  Azure           │     │  Microsoft Fabric  │
+│                       │     │                  │     │                    │
+│  hospital_vitals.py  ─┼────▶│  Event Hub      ─┼────▶│  Eventstream       │
+│  hospital_movement.py─┼────▶│                  │     │       │            │
+│  trains_eventhub.py  ─┼────▶│                  │     │       ▼            │
+│  flight_tracker.py   ─┼────▶│                  │     │  KQL Database      │
+│                       │     │                  │     │       │            │
+│  trains_iothub.py    ─┼────▶│  IoT Hub ────────┼────▶│       ▼            │
+└───────────────────────┘     └──────────────────┘     │  Real-Time         │
+                                                       │  Dashboard / Agent │
+                                                       └────────────────────┘</pre>
+        </div>
+    </section>
+
+    <!-- Quick Start -->
+    <section id="quickstart">
+        <h2>Quick Start</h2>
+        <p class="section-subtitle">Get up and running in minutes.</p>
+
+        <ol class="steps">
+            <li>
+                <h3>Set Up Azure Resources</h3>
+                <p>Create an Event Hubs namespace and individual hubs. See the <a href="#setup">Azure Setup</a> section below.</p>
+            </li>
+            <li>
+                <h3>Clone & Configure</h3>
+                <pre><code>git clone https://github.com/nickTinMicrosoft/rti_streaming_examples.git
+cd rti_streaming_examples
+cp .env.example .env
+# Edit .env with your connection strings</code></pre>
+            </li>
+            <li>
+                <h3>Install Dependencies</h3>
+                <pre><code>cd hospital          # or trains/ or flight-tracker/
+pip install -r requirements.txt</code></pre>
+            </li>
+            <li>
+                <h3>Run a Simulator</h3>
+                <pre><code>python hospital_vitals.py</code></pre>
+                <p>Press <code>Ctrl+C</code> to stop. Data streams to Event Hub in real time.</p>
+            </li>
+        </ol>
+    </section>
+
+    <!-- Hospital Detail -->
+    <section id="hospital">
+        <h2>🏥 Hospital Simulator</h2>
+        <p class="section-subtitle">Two scripts that simulate a busy hospital floor with 15 patients.</p>
+
+        <div class="card-grid">
+            <div class="card">
+                <h3>hospital_vitals.py</h3>
+                <p>Streams vital signs — heart rate, blood pressure, SpO2, temperature, and respiratory rate. Patient conditions shift between stable, elevated, and critical.</p>
+            </div>
+            <div class="card">
+                <h3>hospital_movement.py</h3>
+                <p>Streams movement events — admissions, room transfers, X-Ray visits, and discharges. Uses the same patient IDs for joins in Fabric.</p>
+            </div>
+        </div>
+
+        <h3 style="margin-top: 2rem;">Vitals Data Schema</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>patient_id</code></td><td>string</td><td>De-identified ID (PAT-XXXXX)</td></tr>
+                    <tr><td><code>age</code></td><td>int</td><td>Patient age</td></tr>
+                    <tr><td><code>condition</code></td><td>string</td><td>stable, elevated, or critical</td></tr>
+                    <tr><td><code>heart_rate</code></td><td>int</td><td>Beats per minute</td></tr>
+                    <tr><td><code>bp_systolic</code> / <code>bp_diastolic</code></td><td>int</td><td>Blood pressure (mmHg)</td></tr>
+                    <tr><td><code>temperature_f</code></td><td>float</td><td>Body temperature (°F)</td></tr>
+                    <tr><td><code>spo2</code></td><td>int</td><td>Oxygen saturation (%)</td></tr>
+                    <tr><td><code>respiratory_rate</code></td><td>int</td><td>Breaths per minute</td></tr>
+                    <tr><td><code>timestamp</code></td><td>string</td><td>UTC ISO 8601</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Trains Detail -->
+    <section id="trains">
+        <h2>🚇 Train Telemetry Simulator</h2>
+        <p class="section-subtitle">NYC metro train data — choose between Event Hub and IoT Hub versions.</p>
+
+        <div class="card-grid">
+            <div class="card">
+                <h3>trains_eventhub.py</h3>
+                <p>Sends train telemetry using a shared Event Hub producer. Simplest setup — just needs one connection string.</p>
+                <span class="card-tag">Event Hub</span>
+            </div>
+            <div class="card">
+                <h3>trains_iothub.py</h3>
+                <p>Sends telemetry using per-device IoT Hub connections. Great for demonstrating device identity and IoT Hub routing.</p>
+                <span class="card-tag">IoT Hub</span>
+            </div>
+        </div>
+
+        <h3 style="margin-top: 2rem;">Train Data Schema</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>trainId</code></td><td>string</td><td>Train identifier (e.g., Train-Red-1)</td></tr>
+                    <tr><td><code>line</code></td><td>string</td><td>Line name — Red, Blue, or Green</td></tr>
+                    <tr><td><code>lat</code> / <code>lon</code></td><td>float</td><td>GPS coordinates along the route</td></tr>
+                    <tr><td><code>speed</code></td><td>int</td><td>Ground speed (mph)</td></tr>
+                    <tr><td><code>status</code></td><td>string</td><td>OnTime or Delayed</td></tr>
+                    <tr><td><code>timestamp</code></td><td>string</td><td>UTC ISO 8601</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Flights Detail -->
+    <section id="flights">
+        <h2>✈️ PiAware Flight Tracker</h2>
+        <p class="section-subtitle">Live ADS-B data from a real receiver — the only simulator that uses real-world data.</p>
+
+        <div class="card">
+            <h3>What You Need</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr><th>Component</th><th>Description</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Raspberry Pi</td><td>3B+ or newer</td></tr>
+                        <tr><td>FlightAware Pro Stick Plus</td><td>USB SDR receiver (1090 MHz)</td></tr>
+                        <tr><td>1090 MHz ADS-B Antenna</td><td>Outdoor mounting recommended</td></tr>
+                        <tr><td>MicroSD Card</td><td>16 GB+ with PiAware OS</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <h3 style="margin-top: 2rem;">Flight Data Schema</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>hex</code></td><td>string</td><td>ICAO 24-bit aircraft address</td></tr>
+                    <tr><td><code>flight</code></td><td>string</td><td>Callsign / flight number</td></tr>
+                    <tr><td><code>lat</code> / <code>lon</code></td><td>float</td><td>Position coordinates</td></tr>
+                    <tr><td><code>alt_baro</code></td><td>int</td><td>Barometric altitude (ft)</td></tr>
+                    <tr><td><code>gs</code></td><td>float</td><td>Ground speed (knots)</td></tr>
+                    <tr><td><code>track</code></td><td>float</td><td>Heading (degrees)</td></tr>
+                    <tr><td><code>squawk</code></td><td>string</td><td>Transponder code</td></tr>
+                    <tr><td><code>timestamp</code></td><td>string</td><td>UTC ISO 8601</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3 style="margin-top: 2rem;">Running</h3>
+        <pre><code># Default (localhost:8080, 5s interval)
+python flight_tracker.py
+
+# Custom host and polling interval
+python flight_tracker.py --host 192.168.1.50 --port 8080 --interval 2</code></pre>
+    </section>
+
+    <!-- Azure Setup -->
+    <section id="setup">
+        <h2>Azure Setup</h2>
+        <p class="section-subtitle">Create the Azure resources needed by the simulators.</p>
+
+        <div class="card-grid">
+            <div class="card">
+                <div class="card-icon">📘</div>
+                <h3>Event Hubs Setup</h3>
+                <p>Create a namespace, individual hubs (hospital-vitals, hospital-movement, metrotrain, flight-tracker), and SAS policies.</p>
+                <p style="margin-top: 1rem;"><a href="setup-event-hub.html">Full Event Hub Guide →</a></p>
+            </div>
+            <div class="card">
+                <div class="card-icon">📗</div>
+                <h3>IoT Hub Setup</h3>
+                <p>Create an IoT Hub, register 3 devices (one per train line), and get device connection strings.</p>
+                <p style="margin-top: 1rem;"><a href="setup-iot-hub.html">Full IoT Hub Guide →</a></p>
+            </div>
+        </div>
+
+        <h3 style="margin-top: 2.5rem;">Environment Variables</h3>
+        <p style="margin-bottom: 1rem; color: var(--text-muted);">All scripts load secrets from a <code>.env</code> file in the project root.</p>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th>Variable</th><th>Used By</th><th>Required For</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>EVENTHUB_VITALS_CONN_STR</code></td><td>Hospital vitals</td><td>Hospital demo</td></tr>
+                    <tr><td><code>EVENTHUB_MOVEMENT_CONN_STR</code></td><td>Hospital movement</td><td>Hospital demo</td></tr>
+                    <tr><td><code>EVENTHUB_TRAIN_CONN_STR</code></td><td>Trains (Event Hub)</td><td>Train EH demo</td></tr>
+                    <tr><td><code>IOT_RED/BLUE/GREEN_LINE_CONN_STR</code></td><td>Trains (IoT Hub)</td><td>Train IoT demo</td></tr>
+                    <tr><td><code>EVENTHUB_FLIGHT_CONN_STR</code></td><td>Flight tracker</td><td>Flight demo</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 1rem 1.5rem; margin-top: 1.5rem;">
+            ⚠️ <strong>Never commit your <code>.env</code> file.</strong> It is gitignored by default.
+        </div>
+    </section>
+
+    <!-- Requirements -->
+    <section id="requirements">
+        <h2>Requirements</h2>
+        <div class="card-grid">
+            <div class="card">
+                <div class="card-icon">🐍</div>
+                <h3>Python 3.10+</h3>
+                <p>All simulators are pure Python with minimal dependencies.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">☁️</div>
+                <h3>Azure Subscription</h3>
+                <p>For Event Hubs and/or IoT Hub. Free tier works for IoT Hub.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">💎</div>
+                <h3>Microsoft Fabric Workspace</h3>
+                <p>For Eventstream, KQL Database, and real-time dashboards.</p>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<!-- Footer -->
+<footer>
+    <p>
+        <strong>RTI Streaming Examples</strong> — MIT License<br>
+        <a href="https://github.com/nickTinMicrosoft/rti_streaming_examples">View on GitHub</a>
+    </p>
+</footer>
+
+</body>
+</html>
