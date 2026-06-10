@@ -1,0 +1,72 @@
+// ============================================================
+// Water Waste / NRW — Dashboard Queries
+// ============================================================
+
+// ----- NRW Percentage by DMA (Last Hour) -----
+// Shows average NRW% for each zone in the past hour
+WaterWasteReadings
+| where timestamp > ago(1h)
+| summarize avg_nrw = avg(nrw_percentage), reading_count = count() by dma_id, dma_name
+| order by avg_nrw desc
+| project dma_id, dma_name, avg_nrw = round(avg_nrw, 2), reading_count
+
+
+// ----- Flow Balance Trend (Time-Series) -----
+// 5-minute bins showing flow balance delta over time per DMA
+WaterWasteReadings
+| where timestamp > ago(6h)
+| summarize avg_delta = avg(flow_balance_delta_mgd) by bin(timestamp, 5m), dma_id, dma_name
+| order by timestamp asc, dma_id asc
+
+
+// ----- Active Alerts -----
+// All alert events in the last 2 hours
+WaterWasteReadings
+| where timestamp > ago(2h)
+| where alert_flag == true
+| project timestamp, dma_id, dma_name, alert_type, nrw_percentage, inlet_pressure_psi, flow_balance_delta_mgd
+| order by timestamp desc
+
+
+// ----- Min Night Flow Comparison Across Zones -----
+// Average MNF for each DMA during night hours (2-4 AM UTC)
+WaterWasteReadings
+| where timestamp > ago(7d)
+| extend hour = datetime_part("Hour", timestamp)
+| where hour >= 2 and hour <= 4
+| summarize avg_mnf = avg(min_night_flow_mgd), max_mnf = max(min_night_flow_mgd) by dma_id, dma_name, connections
+| extend mnf_per_connection = round(avg_mnf / connections * 1000000, 2)  // gallons per connection
+| order by avg_mnf desc
+
+
+// ----- Estimated Water Loss Volume (MGD) -----
+// Total estimated water loss across all DMAs in the last hour
+WaterWasteReadings
+| where timestamp > ago(1h)
+| summarize
+    total_inlet = sum(zone_inlet_flow_mgd),
+    total_consumption = sum(zone_consumption_mgd),
+    total_delta = sum(flow_balance_delta_mgd),
+    avg_nrw_pct = avg(nrw_percentage),
+    reading_count = count()
+| extend estimated_daily_loss_mgd = round(total_delta / reading_count * 12 * 24, 2)  // extrapolate
+| project total_inlet = round(total_inlet, 2), total_consumption = round(total_consumption, 2),
+          total_delta = round(total_delta, 2), avg_nrw_pct = round(avg_nrw_pct, 2),
+          estimated_daily_loss_mgd
+
+
+// ----- Worst Performing DMAs Ranked -----
+// DMAs with highest NRW% over the last 24 hours
+WaterWasteReadings
+| where timestamp > ago(24h)
+| summarize
+    avg_nrw = avg(nrw_percentage),
+    max_nrw = max(nrw_percentage),
+    avg_delta = avg(flow_balance_delta_mgd),
+    alert_count = countif(alert_flag == true),
+    total_readings = count()
+    by dma_id, dma_name, pipe_km
+| extend alert_rate_pct = round(todouble(alert_count) / total_readings * 100, 1)
+| order by avg_nrw desc
+| project dma_id, dma_name, pipe_km, avg_nrw = round(avg_nrw, 2), max_nrw = round(max_nrw, 2),
+          avg_delta = round(avg_delta, 4), alert_count, alert_rate_pct

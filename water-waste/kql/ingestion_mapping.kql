@@ -1,0 +1,26 @@
+// JSON ingestion mapping for WaterWasteReadings
+
+.create table WaterWasteReadings ingestion json mapping 'WaterWasteReadings_mapping'
+```
+[
+    {"column": "dma_id",                  "path": "$.dma_id",                  "datatype": "string"},
+    {"column": "dma_name",                "path": "$.dma_name",                "datatype": "string"},
+    {"column": "connections",             "path": "$.connections",             "datatype": "int"},
+    {"column": "pipe_km",                 "path": "$.pipe_km",                 "datatype": "real"},
+    {"column": "latitude",                "path": "$.latitude",                "datatype": "real"},
+    {"column": "longitude",              "path": "$.longitude",              "datatype": "real"},
+    {"column": "zone_inlet_flow_mgd",     "path": "$.zone_inlet_flow_mgd",     "datatype": "real"},
+    {"column": "zone_consumption_mgd",    "path": "$.zone_consumption_mgd",    "datatype": "real"},
+    {"column": "flow_balance_delta_mgd",  "path": "$.flow_balance_delta_mgd",  "datatype": "real"},
+    {"column": "nrw_percentage",          "path": "$.nrw_percentage",          "datatype": "real"},
+    {"column": "inlet_pressure_psi",      "path": "$.inlet_pressure_psi",      "datatype": "real"},
+    {"column": "outlet_pressure_psi",     "path": "$.outlet_pressure_psi",     "datatype": "real"},
+    {"column": "min_night_flow_mgd",      "path": "$.min_night_flow_mgd",      "datatype": "real"},
+    {"column": "pump_efficiency_pct",     "path": "$.pump_efficiency_pct",     "datatype": "real"},
+    {"column": "storage_tank_level_ft",   "path": "$.storage_tank_level_ft",   "datatype": "real"},
+    {"column": "flow_velocity_fps",       "path": "$.flow_velocity_fps",       "datatype": "real"},
+    {"column": "alert_flag",              "path": "$.alert_flag",              "datatype": "bool"},
+    {"column": "alert_type",              "path": "$.alert_type",              "datatype": "string"},
+    {"column": "timestamp",               "path": "$.timestamp",               "datatype": "datetime"}
+]
+```

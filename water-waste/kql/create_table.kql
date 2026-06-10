@@ -1,0 +1,23 @@
+// Create the WaterWasteReadings table in your KQL database
+
+.create table WaterWasteReadings (
+    dma_id: string,
+    dma_name: string,
+    connections: int,
+    pipe_km: real,
+    latitude: real,
+    longitude: real,
+    zone_inlet_flow_mgd: real,
+    zone_consumption_mgd: real,
+    flow_balance_delta_mgd: real,
+    nrw_percentage: real,
+    inlet_pressure_psi: real,
+    outlet_pressure_psi: real,
+    min_night_flow_mgd: real,
+    pump_efficiency_pct: real,
+    storage_tank_level_ft: real,
+    flow_velocity_fps: real,
+    alert_flag: bool,
+    alert_type: string,
+    timestamp: datetime
+)

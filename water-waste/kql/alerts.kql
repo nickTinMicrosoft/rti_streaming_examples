@@ -1,0 +1,89 @@
+// ============================================================
+// Water Waste / NRW — Alert Detection Queries
+// ============================================================
+
+// ----- Burst Detection -----
+// Sudden pressure drop combined with flow spike indicates a pipe burst
+// Triggers when inlet pressure drops > 15 PSI below zone average AND delta spikes
+WaterWasteReadings
+| where timestamp > ago(1h)
+| summarize
+    avg_pressure = avg(inlet_pressure_psi),
+    avg_delta = avg(flow_balance_delta_mgd)
+    by dma_id, dma_name
+| join kind=inner (
+    WaterWasteReadings
+    | where timestamp > ago(5m)
+    | project dma_id, timestamp, inlet_pressure_psi, flow_balance_delta_mgd, alert_type
+) on dma_id
+| where inlet_pressure_psi < (avg_pressure - 15)
+    and flow_balance_delta_mgd > (avg_delta * 2.5)
+| project timestamp, dma_id, dma_name,
+          pressure_drop = round(avg_pressure - inlet_pressure_psi, 1),
+          delta_spike_ratio = round(flow_balance_delta_mgd / avg_delta, 2),
+          alert_type
+| order by timestamp desc
+
+
+// ----- Sustained Leak Detection -----
+// Rising minimum night flow over multiple readings suggests a growing leak
+// Compares current MNF to 7-day historical baseline
+WaterWasteReadings
+| where timestamp > ago(7d)
+| extend hour = datetime_part("Hour", timestamp)
+| where hour >= 2 and hour <= 4
+| summarize baseline_mnf = avg(min_night_flow_mgd) by dma_id, dma_name
+| join kind=inner (
+    WaterWasteReadings
+    | where timestamp > ago(24h)
+    | extend hour = datetime_part("Hour", timestamp)
+    | where hour >= 2 and hour <= 4
+    | summarize recent_mnf = avg(min_night_flow_mgd), readings = count() by dma_id
+) on dma_id
+| where recent_mnf > baseline_mnf * 1.4  // 40% above baseline = sustained leak likely
+| extend mnf_increase_pct = round((recent_mnf - baseline_mnf) / baseline_mnf * 100, 1)
+| project dma_id, dma_name, baseline_mnf = round(baseline_mnf, 4),
+          recent_mnf = round(recent_mnf, 4), mnf_increase_pct, readings
+| order by mnf_increase_pct desc
+
+
+// ----- Cross-Zone Correlation -----
+// Multiple DMAs alerting simultaneously suggests a trunk main issue
+// If 3+ DMAs have alerts within a 5-minute window, flag as potential trunk main
+WaterWasteReadings
+| where timestamp > ago(1h)
+| where alert_flag == true
+| summarize
+    alerting_dmas = make_set(dma_id),
+    alert_types = make_set(alert_type),
+    dma_count = dcount(dma_id)
+    by bin(timestamp, 5m)
+| where dma_count >= 3
+| project timestamp, dma_count, alerting_dmas, alert_types,
+          severity = case(dma_count >= 5, "CRITICAL - Trunk Main Suspected",
+                          dma_count >= 3, "HIGH - Multi-Zone Event",
+                          "NORMAL")
+| order by timestamp desc
+
+
+// ----- NRW Threshold Breach (>20%) -----
+// Any DMA exceeding 20% NRW in the last hour needs immediate investigation
+WaterWasteReadings
+| where timestamp > ago(1h)
+| where nrw_percentage > 20
+| summarize
+    breach_count = count(),
+    avg_nrw = avg(nrw_percentage),
+    max_nrw = max(nrw_percentage),
+    avg_delta = avg(flow_balance_delta_mgd),
+    first_breach = min(timestamp),
+    last_breach = max(timestamp)
+    by dma_id, dma_name
+| extend duration_minutes = datetime_diff("minute", last_breach, first_breach)
+| extend severity = case(max_nrw > 40, "CRITICAL",
+                          max_nrw > 30, "HIGH",
+                          max_nrw > 20, "ELEVATED",
+                          "NORMAL")
+| project dma_id, dma_name, severity, avg_nrw = round(avg_nrw, 2), max_nrw = round(max_nrw, 2),
+          avg_delta = round(avg_delta, 4), breach_count, duration_minutes
+| order by max_nrw desc
