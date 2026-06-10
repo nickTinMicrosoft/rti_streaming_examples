@@ -35,16 +35,17 @@ You need one Event Hub per data stream. Create the following:
 | `hospital-movement` | `hospital/hospital_movement.py` |
 | `metrotrain` | `trains/trains_eventhub.py` |
 | `flight-tracker` | `flight-tracker/flight_tracker.py` |
+| `water-quality` | `water-quality/water_quality.py` |
 
 For each one:
 
 1. In your Event Hubs Namespace, click **+ Event Hub** in the left menu.
 2. Enter the **Name** from the table above.
-3. Set **Partition Count** to `2` (fine for demos).
+3. Set **Partition Count** to `2` (fine for demos; use `4` for `water-quality`).
 4. Set **Message Retention** to `1` day.
 5. Click **Create**.
 
-Repeat for all four Event Hubs.
+Repeat for all five Event Hubs.
 
 ---
 
@@ -75,6 +76,31 @@ This connection string works for all Event Hubs in the namespace. Use it in your
 Repeat for each Event Hub. Each connection string is scoped to that specific hub.
 
 > **💡 Recommendation for demos**: Use Option A (namespace-level) for simplicity. For production, use Option B.
+
+### Water Quality — Hub-Level Policy (recommended)
+
+The water quality simulator uses a dedicated SAS policy with both **Send** and **Listen** claims so Fabric Eventstream can consume directly from the same policy.
+
+1. Navigate to the `water-quality` Event Hub.
+2. Click **Shared access policies** → **+ Add**.
+3. Name: `water-quality-send-listen`
+4. Check **Send** and **Listen**.
+5. Click **Create**.
+6. Copy the **Connection string – primary key** — use this as `EVENTHUB_WATER_CONN_STR` in your `.env`.
+
+#### Consumer Groups
+
+The `water-quality` hub uses two consumer groups:
+
+1. `$Default` — used by the simulator for verification reads.
+2. `fabric-eventstream` — used by Fabric Eventstream to consume events independently.
+
+To create the `fabric-eventstream` consumer group:
+
+1. In the `water-quality` Event Hub, click **Consumer groups** in the left menu.
+2. Click **+ Consumer group**.
+3. Name: `fabric-eventstream`
+4. Click **Create**.
 
 ---
 
@@ -115,6 +141,9 @@ EVENTHUB_TRAIN_NAME=metrotrain
 
 EVENTHUB_FLIGHT_CONN_STR=Endpoint=sb://ehns-rti-demo-yourname.servicebus.windows.net/;SharedAccessKeyName=SendPolicy;SharedAccessKey=YOUR_KEY_HERE
 EVENTHUB_FLIGHT_NAME=flight-tracker
+
+EVENTHUB_WATER_CONN_STR=Endpoint=sb://ehns-rti-demo-yourname.servicebus.windows.net/;SharedAccessKeyName=water-quality-send-listen;SharedAccessKey=YOUR_KEY_HERE
+EVENTHUB_WATER_NAME=water-quality
 ```
 
 If using **hub-level** policies, each connection string will be different.
@@ -135,14 +164,15 @@ When using a **hub-level** policy, it also includes `EntityPath=<event-hub-name>
 
 ## Verify
 
-After creating everything, your namespace should show 4 Event Hubs:
+After creating everything, your namespace should show 5 Event Hubs:
 
 ```
 ehns-rti-demo-yourname
 ├── hospital-vitals
 ├── hospital-movement
 ├── metrotrain
-└── flight-tracker
+├── flight-tracker
+└── water-quality
 ```
 
 You can verify by running one of the simulators:

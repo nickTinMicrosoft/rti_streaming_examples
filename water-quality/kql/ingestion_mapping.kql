@@ -1,0 +1,26 @@
+// =============================================================================
+// Water Quality Monitoring - JSON Ingestion Mapping
+// =============================================================================
+// Maps the Event Hub JSON payload fields to the WaterQualityReadings table
+// columns. This mapping is referenced when configuring the Eventstream
+// destination in Fabric Eventhouse.
+// =============================================================================
+
+.create table WaterQualityReadings ingestion json mapping 'WaterQualityReadings_JSON_Mapping'
+[
+    {"column": "site_id",                "path": "$.site_id",                "datatype": "string"},
+    {"column": "site_name",              "path": "$.site_name",              "datatype": "string"},
+    {"column": "site_type",              "path": "$.site_type",              "datatype": "string"},
+    {"column": "latitude",               "path": "$.latitude",               "datatype": "real"},
+    {"column": "longitude",              "path": "$.longitude",              "datatype": "real"},
+    {"column": "ph",                     "path": "$.ph",                     "datatype": "real"},
+    {"column": "turbidity_ntu",          "path": "$.turbidity_ntu",          "datatype": "real"},
+    {"column": "free_chlorine_ppm",      "path": "$.free_chlorine_ppm",      "datatype": "real"},
+    {"column": "dissolved_oxygen_mg_l",  "path": "$.dissolved_oxygen_mg_l",  "datatype": "real"},
+    {"column": "water_temperature_c",    "path": "$.water_temperature_c",    "datatype": "real"},
+    {"column": "conductivity_us_cm",     "path": "$.conductivity_us_cm",     "datatype": "real"},
+    {"column": "flow_rate_mgd",          "path": "$.flow_rate_mgd",          "datatype": "real"},
+    {"column": "alert_flag",             "path": "$.alert_flag",             "datatype": "bool"},
+    {"column": "alert_type",             "path": "$.alert_type",             "datatype": "string"},
+    {"column": "timestamp",              "path": "$.timestamp",              "datatype": "datetime"}
+]

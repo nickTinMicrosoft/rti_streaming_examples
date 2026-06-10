@@ -1,0 +1,180 @@
+// =============================================================================
+// Water Quality Monitoring - Anomaly Detection & Alerting Queries
+// =============================================================================
+// Advanced KQL queries for detecting sustained anomalies, correlating
+// multi-site events, and analyzing historical alert patterns.
+// =============================================================================
+
+
+// =============================================================================
+// ALERT 1: Sustained Anomalies
+// =============================================================================
+// Detects when the SAME site has multiple alerts within a 10-minute window.
+// A single alert could be sensor noise — sustained alerts require attention.
+// Threshold: 3+ alerts from the same site within 10 minutes.
+// -----------------------------------------------------------------------------
+
+let sustained_threshold = 3;
+let window_size = 10m;
+WaterQualityReadings
+| where ['timestamp'] > ago(1h)
+| where alert_flag == true
+| summarize
+    alert_count = count(),
+    alert_types = make_set(alert_type),
+    first_alert = min(['timestamp']),
+    last_alert = max(['timestamp']),
+    avg_ph = round(avg(ph), 2),
+    avg_turbidity = round(avg(turbidity_ntu), 2),
+    avg_chlorine = round(avg(free_chlorine_ppm), 2)
+    by site_id, site_name, site_type, bin(['timestamp'], window_size)
+| where alert_count >= sustained_threshold
+| extend duration_seconds = datetime_diff('second', last_alert, first_alert)
+| extend severity = case(
+    alert_count >= 10, "CRITICAL",
+    alert_count >= 5, "HIGH",
+    "MEDIUM")
+| project
+    window_start = ['timestamp'],
+    site_id,
+    site_name,
+    site_type,
+    severity,
+    alert_count,
+    alert_types,
+    duration_seconds,
+    first_alert,
+    last_alert,
+    avg_ph,
+    avg_turbidity,
+    avg_chlorine
+| order by alert_count desc
+
+
+// =============================================================================
+// ALERT 2: Alert Correlation — Multi-Site System-Wide Issues
+// =============================================================================
+// When multiple sites alert simultaneously, it indicates a system-wide
+// problem (e.g., contamination event, treatment failure propagating
+// through the distribution system). Triggers if 3+ sites alert in 5 min.
+// -----------------------------------------------------------------------------
+
+let correlation_window = 5m;
+let min_sites_for_system_alert = 3;
+WaterQualityReadings
+| where ['timestamp'] > ago(1h)
+| where alert_flag == true
+| summarize
+    alerting_sites = dcount(site_id),
+    site_list = make_set(site_name),
+    site_types = make_set(site_type),
+    alert_types = make_set(alert_type),
+    total_alerts = count(),
+    sample_readings = take_any(pack(
+        "ph", ph,
+        "turbidity_ntu", turbidity_ntu,
+        "free_chlorine_ppm", free_chlorine_ppm
+    ), 5)
+    by bin(['timestamp'], correlation_window)
+| where alerting_sites >= min_sites_for_system_alert
+| extend system_alert_severity = case(
+    alerting_sites >= 10, "🔴 CRITICAL — Widespread event",
+    alerting_sites >= 5, "🟠 HIGH — Multi-zone impact",
+    "🟡 ELEVATED — Localized cluster")
+| project
+    window_start = ['timestamp'],
+    system_alert_severity,
+    alerting_sites,
+    site_list,
+    site_types,
+    alert_types,
+    total_alerts
+| order by alerting_sites desc
+
+
+// =============================================================================
+// ALERT 3: Historical Alert Frequency Per Site
+// =============================================================================
+// Ranks sites by alert frequency over the last 7 days. Sites with
+// disproportionately high alert rates may need maintenance or recalibration.
+// -----------------------------------------------------------------------------
+
+WaterQualityReadings
+| where ['timestamp'] > ago(7d)
+| summarize
+    total_readings = count(),
+    total_alerts = countif(alert_flag == true),
+    distinct_alert_types = make_set(alert_type),
+    days_with_alerts = dcount(bin(['timestamp'], 1d))
+    by site_id, site_name, site_type
+| extend alert_rate_pct = round(100.0 * total_alerts / total_readings, 2)
+| extend risk_tier = case(
+    alert_rate_pct >= 10.0, "HIGH RISK",
+    alert_rate_pct >= 5.0, "MODERATE RISK",
+    alert_rate_pct >= 1.0, "LOW RISK",
+    "NORMAL")
+| order by alert_rate_pct desc
+
+
+// =============================================================================
+// ALERT 4: Alert Pattern Analysis — Time of Day
+// =============================================================================
+// Identifies if alerts cluster at specific times of day, which could
+// indicate operational patterns (e.g., treatment cycles, demand peaks).
+// -----------------------------------------------------------------------------
+
+WaterQualityReadings
+| where ['timestamp'] > ago(7d)
+| where alert_flag == true
+| extend hour_of_day = hourofday(['timestamp'])
+| summarize
+    alert_count = count(),
+    sites_affected = dcount(site_id),
+    common_alert_types = make_set(alert_type)
+    by hour_of_day
+| order by hour_of_day asc
+
+
+// =============================================================================
+// ALERT 5: Cascading Failure Detection
+// =============================================================================
+// Detects potential cascading failures by looking for sequential alerts
+// that propagate from upstream (treatment plants) to downstream
+// (distribution, reservoir) sites within a time window.
+// -----------------------------------------------------------------------------
+
+let cascade_window = 30m;
+let upstream_alerts =
+    WaterQualityReadings
+    | where ['timestamp'] > ago(2h)
+    | where alert_flag == true
+    | where site_type == "treatment_plant"
+    | summarize
+        upstream_alert_time = min(['timestamp']),
+        upstream_alert_types = make_set(alert_type)
+        by bin(['timestamp'], cascade_window);
+let downstream_alerts =
+    WaterQualityReadings
+    | where ['timestamp'] > ago(2h)
+    | where alert_flag == true
+    | where site_type in ("distribution_point", "reservoir", "pump_station")
+    | summarize
+        downstream_sites = dcount(site_id),
+        downstream_site_list = make_set(site_name),
+        downstream_alert_types = make_set(alert_type),
+        first_downstream_alert = min(['timestamp'])
+        by bin(['timestamp'], cascade_window);
+upstream_alerts
+| join kind=inner downstream_alerts on $left.['timestamp'] == $right.['timestamp']
+| extend propagation_delay_min = datetime_diff('minute', first_downstream_alert, upstream_alert_time)
+| project
+    window = ['timestamp'],
+    upstream_alert_time,
+    upstream_alert_types,
+    first_downstream_alert,
+    propagation_delay_min,
+    downstream_sites,
+    downstream_site_list,
+    downstream_alert_types
+| where propagation_delay_min >= 0 and propagation_delay_min <= 30
+| order by window desc

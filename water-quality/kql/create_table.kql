@@ -1,0 +1,34 @@
+// =============================================================================
+// Water Quality Monitoring - Table Creation
+// =============================================================================
+// Creates the ingestion table in a KQL Database (Eventhouse) for real-time
+// water quality telemetry from 15-20 sensor sites across a utility network.
+// =============================================================================
+
+.create table WaterQualityReadings (
+    site_id: string,
+    site_name: string,
+    site_type: string,
+    latitude: real,
+    longitude: real,
+    ph: real,
+    turbidity_ntu: real,
+    free_chlorine_ppm: real,
+    dissolved_oxygen_mg_l: real,
+    water_temperature_c: real,
+    conductivity_us_cm: real,
+    flow_rate_mgd: real,
+    alert_flag: bool,
+    alert_type: string,
+    ['timestamp']: datetime
+)
+
+// Set a 90-day retention policy for the hot path (real-time monitoring)
+.alter-merge table WaterQualityReadings policy retention softdelete = 90d recoverability = enabled
+
+// Enable streaming ingestion for sub-second latency
+.alter table WaterQualityReadings policy streamingingestion enable
+
+// Create an update policy to auto-set ingestion time if needed
+// (optional — useful for late-arriving data comparisons)
+.alter table WaterQualityReadings policy ingestiontime true

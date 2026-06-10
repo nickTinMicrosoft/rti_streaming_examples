@@ -1,0 +1,161 @@
+// =============================================================================
+// Water Quality Monitoring - Real-Time Dashboard Queries
+// =============================================================================
+// These queries power the Fabric Real-Time Dashboard panels for live
+// water quality monitoring across sensor sites.
+// =============================================================================
+
+
+// =============================================================================
+// QUERY 1: Latest Reading Per Site (Map Visualization)
+// =============================================================================
+// Returns the most recent reading from each sensor site. Use with the
+// Map visual — latitude/longitude for placement, color by alert_flag.
+// -----------------------------------------------------------------------------
+
+WaterQualityReadings
+| summarize arg_max(['timestamp'], *) by site_id
+| project
+    site_id,
+    site_name,
+    site_type,
+    latitude,
+    longitude,
+    ph,
+    turbidity_ntu,
+    free_chlorine_ppm,
+    dissolved_oxygen_mg_l,
+    water_temperature_c,
+    conductivity_us_cm,
+    flow_rate_mgd,
+    alert_flag,
+    alert_type,
+    ['timestamp']
+| order by site_name asc
+
+
+// =============================================================================
+// QUERY 2: Time-Series — pH, Turbidity, Chlorine (Last 30 Minutes)
+// =============================================================================
+// Line chart with three metrics over time, one line per site.
+// Use parameter for site_id filter in dashboard drill-through.
+// -----------------------------------------------------------------------------
+
+WaterQualityReadings
+| where ['timestamp'] > ago(30m)
+| project ['timestamp'], site_id, site_name, ph, turbidity_ntu, free_chlorine_ppm
+| order by ['timestamp'] asc
+
+
+// =============================================================================
+// QUERY 3: Active Alerts in Last Hour (Alerts Table)
+// =============================================================================
+// Table showing all alert events with details, most recent first.
+// Color-code by alert_type for quick triage.
+// -----------------------------------------------------------------------------
+
+WaterQualityReadings
+| where ['timestamp'] > ago(1h)
+| where alert_flag == true
+| project
+    ['timestamp'],
+    site_id,
+    site_name,
+    site_type,
+    alert_type,
+    ph,
+    turbidity_ntu,
+    free_chlorine_ppm,
+    dissolved_oxygen_mg_l
+| order by ['timestamp'] desc
+
+
+// =============================================================================
+// QUERY 4: Site Health Summary — Avg Metrics Per Site (Last 5 Minutes)
+// =============================================================================
+// Summary card / heatmap showing average values per site over the most
+// recent 5-minute window. Useful for at-a-glance health status.
+// -----------------------------------------------------------------------------
+
+WaterQualityReadings
+| where ['timestamp'] > ago(5m)
+| summarize
+    reading_count = count(),
+    avg_ph = round(avg(ph), 2),
+    avg_turbidity_ntu = round(avg(turbidity_ntu), 2),
+    avg_free_chlorine_ppm = round(avg(free_chlorine_ppm), 2),
+    avg_dissolved_oxygen_mg_l = round(avg(dissolved_oxygen_mg_l), 2),
+    avg_water_temperature_c = round(avg(water_temperature_c), 1),
+    avg_conductivity_us_cm = round(avg(conductivity_us_cm), 0),
+    avg_flow_rate_mgd = round(avg(flow_rate_mgd), 1),
+    alert_count = countif(alert_flag == true),
+    last_reading = max(['timestamp'])
+    by site_id, site_name, site_type
+| extend status = iff(alert_count > 0, "⚠️ Alert", "✅ Normal")
+| order by alert_count desc, site_name asc
+
+
+// =============================================================================
+// QUERY 5: Anomaly Count Per Hour — Rolling 24h (Trend Panel)
+// =============================================================================
+// Bar or area chart showing anomaly frequency over the last 24 hours,
+// binned by hour. Helps identify patterns (e.g., alerts spike at night).
+// -----------------------------------------------------------------------------
+
+WaterQualityReadings
+| where ['timestamp'] > ago(24h)
+| where alert_flag == true
+| summarize
+    anomaly_count = count(),
+    distinct_sites_affected = dcount(site_id),
+    alert_types = make_set(alert_type)
+    by bin(['timestamp'], 1h)
+| order by ['timestamp'] asc
+
+
+// =============================================================================
+// QUERY 6: Compliance Check — Readings Outside EPA Limits
+// =============================================================================
+// Identifies readings that violate EPA Safe Drinking Water Act thresholds:
+//   - pH: must be 6.5–8.5
+//   - Turbidity: must be ≤ 1.0 NTU (treatment plants ≤ 0.3 NTU)
+//   - Free Chlorine: must be 0.2–4.0 ppm
+//   - Dissolved Oxygen: should be ≥ 5.0 mg/L (surface water standard)
+//   - Temperature: flagged if > 25°C (elevated, affects other parameters)
+// -----------------------------------------------------------------------------
+
+WaterQualityReadings
+| where ['timestamp'] > ago(1h)
+| extend
+    ph_violation = ph < 6.5 or ph > 8.5,
+    turbidity_violation = turbidity_ntu > 1.0,
+    turbidity_treatment_violation = site_type == "treatment_plant" and turbidity_ntu > 0.3,
+    chlorine_low = free_chlorine_ppm < 0.2,
+    chlorine_high = free_chlorine_ppm > 4.0,
+    do_violation = dissolved_oxygen_mg_l < 5.0,
+    temperature_elevated = water_temperature_c > 25.0
+| extend has_violation = ph_violation or turbidity_violation or turbidity_treatment_violation
+    or chlorine_low or chlorine_high or do_violation or temperature_elevated
+| where has_violation == true
+| extend violation_details = strcat_array(
+    array_concat(
+        iff(ph_violation, dynamic(["pH out of range (6.5-8.5)"]), dynamic([])),
+        iff(turbidity_violation, dynamic(["Turbidity > 1.0 NTU"]), dynamic([])),
+        iff(turbidity_treatment_violation, dynamic(["Treatment plant turbidity > 0.3 NTU"]), dynamic([])),
+        iff(chlorine_low, dynamic(["Chlorine below minimum (< 0.2 ppm)"]), dynamic([])),
+        iff(chlorine_high, dynamic(["Chlorine above maximum (> 4.0 ppm)"]), dynamic([])),
+        iff(do_violation, dynamic(["Dissolved oxygen < 5.0 mg/L"]), dynamic([])),
+        iff(temperature_elevated, dynamic(["Temperature elevated > 25°C"]), dynamic([]))
+    ), ", ")
+| project
+    ['timestamp'],
+    site_id,
+    site_name,
+    site_type,
+    ph,
+    turbidity_ntu,
+    free_chlorine_ppm,
+    dissolved_oxygen_mg_l,
+    water_temperature_c,
+    violation_details
+| order by ['timestamp'] desc

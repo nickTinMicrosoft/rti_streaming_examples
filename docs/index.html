@@ -311,6 +311,7 @@
         <li><a href="#hospital">Hospital</a></li>
         <li><a href="#trains">Trains</a></li>
         <li><a href="#flights">Flights</a></li>
+        <li><a href="#water-quality">Water Quality</a></li>
         <li><a href="#setup">Azure Setup</a></li>
     </ul>
 </nav>
@@ -320,7 +321,7 @@
     <!-- Simulators Overview -->
     <section id="simulators">
         <h2>Simulators</h2>
-        <p class="section-subtitle">Three ready-to-run streaming apps — no real hardware or data sources required (except the flight tracker).</p>
+        <p class="section-subtitle">Four ready-to-run streaming apps — no real hardware or data sources required (except the flight tracker).</p>
 
         <div class="card-grid">
             <div class="card">
@@ -342,6 +343,12 @@
                 <p>Live ADS-B aircraft data from a local PiAware/dump1090 receiver. Real flight data — requires a Raspberry Pi with SDR hardware.</p>
                 <span class="card-tag">Event Hub</span>
                 <span class="card-tag">Live Data</span>
+            </div>
+            <div class="card">
+                <div class="card-icon">💧</div>
+                <h3>Water Quality</h3>
+                <p>Real-time water quality monitoring across 18 sensor sites. Tracks pH, turbidity, chlorine, dissolved oxygen, and more with automated anomaly detection.</p>
+                <span class="card-tag">Event Hub</span>
             </div>
         </div>
     </section>
@@ -519,6 +526,24 @@ python flight_tracker.py
 python flight_tracker.py --host 192.168.1.50 --port 8080 --interval 2</code></pre>
     </section>
 
+    <!-- Water Quality Detail -->
+    <section id="water-quality">
+        <h2>💧 Water Quality Simulator</h2>
+        <p class="section-subtitle">Monitors water quality across 18 sensor sites with automated anomaly detection.</p>
+
+        <div class="card">
+            <h3>water_quality.py</h3>
+            <p>Streams water quality readings — pH, turbidity, chlorine residual, dissolved oxygen, temperature, and conductivity — from 18 simulated sensor sites across a water utility network. Includes automated anomaly detection that fires alerts when readings exceed safe thresholds.</p>
+            <span class="card-tag">Event Hub</span>
+            <span class="card-tag">Anomaly Detection</span>
+        </div>
+
+        <h3 style="margin-top: 2rem;">Running</h3>
+        <pre><code>cd water-quality
+pip install -r requirements.txt
+python water_quality.py</code></pre>
+    </section>
+
     <!-- Azure Setup -->
     <section id="setup">
         <h2>Azure Setup</h2>
@@ -528,7 +553,7 @@ python flight_tracker.py --host 192.168.1.50 --port 8080 --interval 2</code></pr
             <div class="card">
                 <div class="card-icon">📘</div>
                 <h3>Event Hubs Setup</h3>
-                <p>Create a namespace, individual hubs (hospital-vitals, hospital-movement, metrotrain, flight-tracker), and SAS policies.</p>
+                <p>Create a namespace, individual hubs (hospital-vitals, hospital-movement, metrotrain, flight-tracker, water-quality), and SAS policies.</p>
                 <p style="margin-top: 1rem;"><a href="setup-event-hub.html">Full Event Hub Guide →</a></p>
             </div>
             <div class="card">
@@ -553,6 +578,8 @@ python flight_tracker.py --host 192.168.1.50 --port 8080 --interval 2</code></pr
                     <tr><td><code>EVENTHUB_TRAIN_CONN_STR</code></td><td>Trains (Event Hub)</td><td>Train EH demo</td></tr>
                     <tr><td><code>IOT_RED/BLUE/GREEN_LINE_CONN_STR</code></td><td>Trains (IoT Hub)</td><td>Train IoT demo</td></tr>
                     <tr><td><code>EVENTHUB_FLIGHT_CONN_STR</code></td><td>Flight tracker</td><td>Flight demo</td></tr>
+                    <tr><td><code>EVENTHUB_WATER_CONN_STR</code></td><td>Water quality</td><td>Water quality demo</td></tr>
+                    <tr><td><code>EVENTHUB_WATER_NAME</code></td><td>Water quality</td><td>Water quality demo</td></tr>
                 </tbody>
             </table>
         </div>
