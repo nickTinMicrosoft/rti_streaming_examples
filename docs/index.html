@@ -312,6 +312,7 @@
         <li><a href="#trains">Trains</a></li>
         <li><a href="#flights">Flights</a></li>
         <li><a href="#water-quality">Water Quality</a></li>
+        <li><a href="#water-waste">Water Waste</a></li>
         <li><a href="#setup">Azure Setup</a></li>
     </ul>
 </nav>
@@ -321,7 +322,7 @@
     <!-- Simulators Overview -->
     <section id="simulators">
         <h2>Simulators</h2>
-        <p class="section-subtitle">Four ready-to-run streaming apps — no real hardware or data sources required (except the flight tracker).</p>
+        <p class="section-subtitle">Five ready-to-run streaming apps — no real hardware or data sources required (except the flight tracker).</p>
 
         <div class="card-grid">
             <div class="card">
@@ -349,6 +350,13 @@
                 <h3>Water Quality</h3>
                 <p>Real-time water quality monitoring across 18 sensor sites. Tracks pH, turbidity, chlorine, dissolved oxygen, and more with automated anomaly detection.</p>
                 <span class="card-tag">Event Hub</span>
+            </div>
+            <div class="card">
+                <div class="card-icon">🚰</div>
+                <h3>Water Waste / NRW</h3>
+                <p>Non-Revenue Water monitoring across 12 District Metered Areas. Tracks flow balance, pressure differentials, and detects pipe bursts, sustained leaks, and meter fraud.</p>
+                <span class="card-tag">Event Hub</span>
+                <span class="card-tag">Leak Detection</span>
             </div>
         </div>
     </section>
@@ -544,6 +552,25 @@ pip install -r requirements.txt
 python water_quality.py</code></pre>
     </section>
 
+    <!-- Water Waste Detail -->
+    <section id="water-waste">
+        <h2>🚰 Water Waste / NRW Simulator</h2>
+        <p class="section-subtitle">Monitors Non-Revenue Water across 12 District Metered Areas with automated leak and burst detection.</p>
+
+        <div class="card">
+            <h3>water_waste.py</h3>
+            <p>Streams flow balance, pressure, and NRW percentage from 12 DMAs. Simulates time-of-day demand patterns and injects anomalies including pipe bursts, sustained leaks, meter fraud, hydrant theft, and tank overflow events.</p>
+            <span class="card-tag">Event Hub</span>
+            <span class="card-tag">Leak Detection</span>
+            <span class="card-tag">DMA Monitoring</span>
+        </div>
+
+        <h3 style="margin-top: 2rem;">Running</h3>
+        <pre><code>cd water-waste
+pip install -r requirements.txt
+python water_waste.py</code></pre>
+    </section>
+
     <!-- Azure Setup -->
     <section id="setup">
         <h2>Azure Setup</h2>
@@ -553,7 +580,7 @@ python water_quality.py</code></pre>
             <div class="card">
                 <div class="card-icon">📘</div>
                 <h3>Event Hubs Setup</h3>
-                <p>Create a namespace, individual hubs (hospital-vitals, hospital-movement, metrotrain, flight-tracker, water-quality), and SAS policies.</p>
+                <p>Create a namespace, individual hubs (hospital-vitals, hospital-movement, metrotrain, flight-tracker, water-quality, water-waste), and SAS policies.</p>
                 <p style="margin-top: 1rem;"><a href="setup-event-hub.html">Full Event Hub Guide →</a></p>
             </div>
             <div class="card">
@@ -580,6 +607,8 @@ python water_quality.py</code></pre>
                     <tr><td><code>EVENTHUB_FLIGHT_CONN_STR</code></td><td>Flight tracker</td><td>Flight demo</td></tr>
                     <tr><td><code>EVENTHUB_WATER_CONN_STR</code></td><td>Water quality</td><td>Water quality demo</td></tr>
                     <tr><td><code>EVENTHUB_WATER_NAME</code></td><td>Water quality</td><td>Water quality demo</td></tr>
+                    <tr><td><code>EVENTHUB_WASTE_CONN_STR</code></td><td>Water waste / NRW</td><td>Water waste demo</td></tr>
+                    <tr><td><code>EVENTHUB_WASTE_NAME</code></td><td>Water waste / NRW</td><td>Water waste demo</td></tr>
                 </tbody>
             </table>
         </div>
